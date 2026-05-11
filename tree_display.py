@@ -7,6 +7,49 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import font
 
+def enable_treeview_sorting(tree: ttk.Treeview):
+    """
+    Active le tri en cliquant sur l'en-tête d'une colonne.
+    Clique successif sur la même colonne => inverse asc/desc.
+    """
+    state = {"col": None, "desc": False}
+
+    def to_key(value):
+        # Tri "intelligent": num si possible, sinon texte
+        if value is None:
+            return (1, "")
+        s = str(value).strip()
+        if s == "":
+            return (1, "")
+        try:
+            return (0, float(s.replace(",", ".")))
+        except ValueError:
+            return (1, s.casefold())
+
+    def sort_column(col: str):
+        items = list(tree.get_children(""))
+        data = [(to_key(tree.set(iid, col)), iid) for iid in items]
+
+        if state["col"] == col:
+            state["desc"] = not state["desc"]
+        else:
+            state["col"] = col
+            state["desc"] = False
+
+        data.sort(reverse=state["desc"])
+
+        for idx, (_, iid) in enumerate(data):
+            tree.move(iid, "", idx)
+
+        # (optionnel) indicateur dans le header
+        for c in tree["columns"]:
+            tree.heading(c, text=c, command=lambda cc=c: sort_column(cc))
+        arrow = " ↓" if state["desc"] else " ↑"
+        tree.heading(col, text=f"{col}{arrow}", command=lambda cc=col: sort_column(cc))
+
+    for col in tree["columns"]:
+        tree.heading(col, command=lambda c=col: sort_column(c))
+
 # C'est la fonction principale pour afficher un tableau de données dans un TreeView
 # data doit être une liste de dictionnaires, où chaque dictionnaire représente une ligne et les clés    sont les noms des colonnes
 # Exemple : data = [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}]
@@ -57,6 +100,9 @@ def display_array(frame, data):
 
     # insérer données
     insert_rows(tree, data, columns)
+
+    # activer le tri par clic sur les en-têtes
+    enable_treeview_sorting(tree)
     return tree
 
 
@@ -72,15 +118,15 @@ def insert_rows(tree, data, columns):
 
 def tkFontMeasure(tree, col, data):
     """ Calcule automatiquement la largeur idéale d’une colonne """
-    font = tk.font.nametofont("TkDefaultFont")
+    f = font.nametofont("TkDefaultFont")
 
     # largeur selon l’en-tête
-    width = font.measure(col)
+    width = f.measure(col)
 
     # largeur selon les données
     for row in data:
         cell_value = str(row[col])
-        width = max(width, font.measure(cell_value))
+    width = max(width, f.measure(cell_value))
 
     # un petit padding et limite à 200px
     return min(width + 20, 200)
