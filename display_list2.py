@@ -1,5 +1,5 @@
 # afficher une liste
-# JCY avril 2026
+# Attivon Kodjo avril 2026
 # dans cet exemple on donne seulement les données sous forme d'un dictionnaire
 # et on peut trier par colonne
 
